@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>$CASINO$</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Space+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --green-bright: #0fe31d;
+            --green-mid: #09a312;
+            --green-glow: rgba(15, 227, 29, 0.5);
+            --black: #050f05;
+            --red: #e84040;
+            --red-glow: rgba(232, 64, 64, 0.5);
+            --gold: #e2c46a;
+            --gold-glow: rgba(226, 196, 106, 0.4);
+            --bottom-bar: 72px;
+            --music-btn: 52px;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html,
+        body {
+            height: 100%;
+        }
+
+        body {
+            background-color: var(--black);
+            background-image:
+                radial-gradient(ellipse 100% 60% at 50% 0%, rgba(15, 227, 29, 0.09) 0%, transparent 65%),
+                repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(15, 227, 29, 0.02) 40px),
+                repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(15, 227, 29, 0.02) 40px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: 'Space Mono', monospace;
+            position: relative;
+            -webkit-text-size-adjust: 100%;
+            touch-action: manipulation;
+            /* Reserve space for the fixed bottom bar so nothing hides under it */
+            height: calc(100vh - var(--bottom-bar));
+            max-height: calc(100vh - var(--bottom-bar));
+            overflow: hidden;
+        }
+
+        /* Scanlines */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: repeating-linear-gradient(to bottom, transparent 0px, transparent 3px, rgba(0, 0, 0, 0.05) 3px, rgba(0, 0, 0, 0.05) 4px);
+            pointer-events: none;
+            z-index: 200;
+        }
+
+        /* Corner brackets */
+        .corner {
+            position: fixed;
+            width: 40px;
+            height: 40px;
+            border-color: var(--green-mid);
+            border-style: solid;
+            opacity: 0.3;
+            z-index: 50;
+        }
+
+        .corner-tl {
+            top: 8px;
+            left: 8px;
+            border-width: 2px 0 0 2px;
+        }
+
+        .corner-tr {
+            top: 8px;
+            right: 8px;
+            border-width: 2px 2px 0 0;
+        }
+
+        .corner-bl {
+            bottom: calc(var(--bottom-bar) + 8px);
+            left: 8px;
+            border-width: 0 0 2px 2px;
+        }
+
+        .corner-br {
+            bottom: calc(var(--bottom-bar) + 8px);
+            right: 8px;
+            border-width: 0 2px 2px 0;
+        }
+
+        /* Ambient orbs */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(90px);
+            pointer-events: none;
+            z-index: 0;
+            animation: pulse-orb 6s ease-in-out infinite alternate;
+        }
+
+        .orb-1 {
+            width: 280px;
+            height: 280px;
+            background: rgba(15, 227, 29, 0.06);
+            top: -100px;
+            left: -80px;
+        }
+
+        .orb-2 {
+            width: 220px;
+            height: 220px;
+            background: rgba(226, 196, 106, 0.04);
+            bottom: 80px;
+            right: -60px;
+            animation-delay: 3s;
+        }
+
+        @keyframes pulse-orb {
+            from {
+                opacity: .4;
+                transform: scale(1);
+            }
+
+            to {
+                opacity: .9;
+                transform: scale(1.25);
+            }
+        }
+
+        /* ═══════════════════════ HEADER ═══════════════════════ */
+        header {
+            text-align: center;
+            padding: 14px 16px 6px;
+            z-index: 10;
+            flex-shrink: 0;
+        }
+
+        h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(1.6rem, 7vw, 2.4rem);
+            font-weight: 900;
+            color: #fff;
+            letter-spacing: 0.12em;
+            line-height: 1;
+        }
+
+        .dollar {
+            color: var(--green-bright);
+            text-shadow: 0 0 14px var(--green-glow), 0 0 40px rgba(15, 227, 29, 0.2);
+        }
+
+        .subtitle {
+            font-size: 0.5rem;
+            letter-spacing: 0.4em;
+            color: rgba(15, 227, 29, 0.35);
+            text-transform: uppercase;
+            margin-top: 3px;
+        }
+
+        /* ═══════════════════════ WHEEL SECTION ═══════════════════════ */
+        .wheel-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            min-height: 0;
+            padding: 2px 12px 0;
+            z-index: 10;
+            overflow: hidden;
+        }
+
+        .roulette-wrap {
+            position: relative;
+            /* 
+             * Available height = 100vh - bottom-bar(72px) - header(~60px) - bet-strip(~100px) - spin-btn(~66px) - toast(~46px) - ticker(20px)
+             * = 100vh - ~364px. Use min() so it also never exceeds viewport width.
+             */
+            width: min(88vw, calc(100vh - 370px));
+            height: min(88vw, calc(100vh - 370px));
+            flex-shrink: 0;
+        }
+
+        #wheelCanvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            display: block;
+            filter: drop-shadow(0 0 22px rgba(15, 227, 29, 0.22)) drop-shadow(0 0 60px rgba(0, 0, 0, 0.7));
+        }
+
+        /* Winning number overlay in hub centre */
+        #hubNumber {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(1.4rem, 7vw, 2.2rem);
+            font-weight: 900;
+            color: #fff;
+            text-shadow: 0 0 16px rgba(0, 0, 0, 0.9);
+            pointer-events: none;
+            z-index: 8;
+            transition: color 0.3s, text-shadow 0.3s, opacity 0.3s;
+            opacity: 0;
+        }
+
+        #hubNumber.show {
+            opacity: 1;
+        }
+
+        #hubNumber.red-num {
+            color: #ff6b6b;
+            text-shadow: 0 0 14px rgba(232, 64, 64, 0.9);
+        }
+
+        #hubNumber.green-num {
+            color: var(--green-bright);
+            text-shadow: 0 0 14px var(--green-glow);
+        }
+
+        #hubNumber.black-num {
+            color: #ddd;
+        }
+
+        /* Ball */
+        #ball {
+            position: absolute;
+            width: clamp(11px, 3.2vw, 15px);
+            height: clamp(11px, 3.2vw, 15px);
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, #fff 0%, #ccc 60%, #888 100%);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.9), inset 0 1px 2px rgba(255, 255, 255, 0.6);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 7;
+        }
+
+        /* Pointer */
+        .pointer {
+            position: absolute;
+            top: -16px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--gold);
+            font-size: 1.4rem;
+            text-shadow: 0 0 10px var(--gold-glow);
+            z-index: 9;
+            line-height: 1;
+        }
+
+        /* ═══════════════════════ BET STRIP ═══════════════════════ */
+        .bet-section {
+            width: 100%;
+            max-width: 500px;
+            padding: 4px 12px 2px;
+            z-index: 10;
+            flex-shrink: 0;
+        }
+
+        .bet-strip {
+            background: rgba(10, 31, 11, 0.7);
+            border: 1px solid rgba(15, 227, 29, 0.15);
+            border-radius: 10px;
+            padding: 10px 12px;
+            backdrop-filter: blur(16px);
+        }
+
+        .bet-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .bet-row:last-of-type {
+            margin-bottom: 0;
+        }
+
+        .bet-label {
+            font-size: 0.48rem;
+            letter-spacing: 0.3em;
+            color: rgba(15, 227, 29, 0.4);
+            white-space: nowrap;
+            min-width: 40px;
+            text-transform: uppercase;
+        }
+
+        .color-bets {
+            display: flex;
+            gap: 6px;
+            flex: 1;
+        }
+
+        .color-btn {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.6rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            border: 1px solid transparent;
+            border-radius: 6px;
+            padding: 10px 0;
+            flex: 1;
+            cursor: pointer;
+            transition: all 0.15s;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            min-height: 42px;
+        }
+
+        .color-btn.red {
+            background: rgba(232, 64, 64, 0.14);
+            color: #e84040;
+            border-color: rgba(232, 64, 64, 0.28);
+        }
+
+        .color-btn.green {
+            background: rgba(15, 227, 29, 0.09);
+            color: var(--green-bright);
+            border-color: rgba(15, 227, 29, 0.28);
+        }
+
+        .color-btn.black {
+            background: rgba(255, 255, 255, 0.04);
+            color: #999;
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        .color-btn.selected.red {
+            background: rgba(232, 64, 64, 0.32);
+            border-color: #e84040;
+            box-shadow: 0 0 14px rgba(232, 64, 64, 0.35);
+            color: #fff;
+        }
+
+        .color-btn.selected.green {
+            background: rgba(15, 227, 29, 0.28);
+            border-color: var(--green-bright);
+            box-shadow: 0 0 14px var(--green-glow);
+            color: #fff;
+        }
+
+        .color-btn.selected.black {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: #ccc;
+            box-shadow: 0 0 14px rgba(255, 255, 255, 0.12);
+            color: #fff;
+        }
+
+        .chips {
+            display: flex;
+            gap: 6px;
+            flex: 1;
+        }
+
+        .chip {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.58rem;
+            font-weight: 700;
+            border-radius: 50%;
+            width: clamp(34px, 8.5vw, 42px);
+            height: clamp(34px, 8.5vw, 42px);
+            border: 2px dashed rgba(226, 196, 106, 0.35);
+            background: rgba(226, 196, 106, 0.07);
+            color: var(--gold);
+            cursor: pointer;
+            transition: all 0.15s;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        .chip:active,
+        .chip.selected {
+            background: rgba(226, 196, 106, 0.22);
+            border-color: var(--gold);
+            box-shadow: 0 0 12px var(--gold-glow);
+            color: #fff;
+        }
+
+        /* ═══════════════════════ SPIN BUTTON ═══════════════════════ */
+        .spin-wrap {
+            width: 100%;
+            max-width: 500px;
+            padding: 6px 12px 6px;
+            z-index: 20;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .spin-btn {
+            display: block;
+            width: 100%;
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(1rem, 4vw, 1.25rem);
+            font-weight: 700;
+            letter-spacing: 0.2em;
+            color: var(--black);
+            background: linear-gradient(135deg, #0fe31d 0%, #09a312 100%);
+            border: none;
+            border-radius: 8px;
+            padding: 14px;
+            cursor: pointer;
+            min-height: 54px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 28px rgba(15, 227, 29, 0.38), 0 4px 18px rgba(0, 0, 0, 0.45);
+            transition: all 0.18s;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            text-transform: uppercase;
+            user-select: none;
+            -webkit-user-select: none;
+            /* Ensure button is always tappable */
+            z-index: 20;
+            pointer-events: auto;
+        }
+
+        .spin-btn:active {
+            transform: scale(0.97);
+        }
+
+        .spin-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Toast */
+        .toast-wrap {
+            width: 100%;
+            max-width: 500px;
+            padding: 0 12px 2px;
+            z-index: 10;
+            flex-shrink: 0;
+            min-height: 36px;
+        }
+
+        .toast-inner {
+            padding: 9px 16px;
+            border-radius: 7px;
+            text-align: center;
+            font-size: 0.7rem;
+            letter-spacing: 0.1em;
+            font-weight: 700;
+            text-transform: uppercase;
+            display: none;
+            animation: toast-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
+        .toast-inner.show {
+            display: block;
+        }
+
+        .toast-inner.win {
+            background: rgba(15, 227, 29, 0.14);
+            border: 1px solid rgba(15, 227, 29, 0.4);
+            color: var(--green-bright);
+        }
+
+        .toast-inner.lose {
+            background: rgba(232, 64, 64, 0.11);
+            border: 1px solid rgba(232, 64, 64, 0.35);
+            color: var(--red);
+        }
+
+        .toast-inner.push {
+            background: rgba(226, 196, 106, 0.09);
+            border: 1px solid rgba(226, 196, 106, 0.3);
+            color: var(--gold);
+        }
+
+        @keyframes toast-in {
+            from {
+                opacity: 0;
+                transform: translateY(4px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ═══════════════════════ BOTTOM BAR ═══════════════════════ */
+        .bottom-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: var(--bottom-bar);
+            background: rgba(5, 15, 5, 0.96);
+            border-top: 1px solid rgba(15, 227, 29, 0.2);
+            backdrop-filter: blur(24px);
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            align-items: center;
+            padding: 0 16px;
+            z-index: 100;
+            gap: 6px;
+        }
+
+        .stat-cell {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .stat-cell.left {
+            align-items: flex-start;
+        }
+
+        .stat-cell.right {
+            align-items: flex-end;
+        }
+
+        .stat-label {
+            font-size: 0.4rem;
+            letter-spacing: 0.32em;
+            color: rgba(15, 227, 29, 0.32);
+            text-transform: uppercase;
+        }
+
+        .stat-value {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(0.95rem, 3.8vw, 1.25rem);
+            font-weight: 700;
+            color: #fff;
+            line-height: 1;
+            transition: color 0.2s, transform 0.16s;
+        }
+
+        .stat-value.positive {
+            color: var(--green-bright);
+        }
+
+        .stat-value.negative {
+            color: var(--red);
+        }
+
+        .stat-value.neutral {
+            color: var(--gold);
+        }
+
+        .dollar-sm {
+            font-size: 0.55em;
+            vertical-align: super;
+            line-height: 0;
+        }
+
+        /* History dots */
+        .history-list {
+            display: flex;
+            gap: 3px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: nowrap;
+            overflow: hidden;
+            max-width: 80px;
+        }
+
+        .history-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            animation: pop-in 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+        }
+
+        .history-dot.w {
+            background: var(--green-bright);
+            box-shadow: 0 0 5px var(--green-glow);
+        }
+
+        .history-dot.l {
+            background: var(--red);
+            box-shadow: 0 0 5px var(--red-glow);
+        }
+
+        @keyframes pop-in {
+            from {
+                transform: scale(0);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* ═══════════════════════ MUSIC BUTTON ═══════════════════════ */
+        #musicBtn {
+            position: fixed;
+            bottom: calc(var(--bottom-bar) + 14px);
+            right: 14px;
+            width: var(--music-btn);
+            height: var(--music-btn);
+            border-radius: 50%;
+            background: rgba(8, 25, 8, 0.92);
+            border: 1px solid rgba(226, 196, 106, 0.32);
+            color: var(--gold);
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 150;
+            box-shadow: 0 0 16px rgba(226, 196, 106, 0.18), 0 4px 14px rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(14px);
+            transition: all 0.2s;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        #musicBtn:active {
+            transform: scale(0.9);
+        }
+
+        #musicBtn.playing {
+            border-color: var(--green-bright);
+            color: var(--green-bright);
+            box-shadow: 0 0 20px var(--green-glow), 0 4px 14px rgba(0, 0, 0, 0.55);
+        }
+
+        /* Track name label */
+        #trackLabel {
+            position: fixed;
+            bottom: calc(var(--bottom-bar) + 30px);
+            right: calc(var(--music-btn) + 22px);
+            font-size: 0.46rem;
+            letter-spacing: 0.18em;
+            color: rgba(226, 196, 106, 0.5);
+            text-transform: uppercase;
+            white-space: nowrap;
+            z-index: 150;
+            pointer-events: none;
+            opacity: 0;
+            transform: translateX(8px);
+            transition: opacity 0.3s, transform 0.3s;
+        }
+
+        #trackLabel.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        /* ═══════════════════════ PARTICLES ═══════════════════════ */
+        .particle {
+            position: fixed;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: float-up linear forwards;
+            opacity: 0;
+        }
+
+        @keyframes float-up {
+            0% {
+                opacity: .85;
+                transform: translateY(0) translateX(0);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translateY(-130px) translateX(var(--dx));
+            }
+        }
+
+        /* Ripple */
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(15, 227, 29, 0.18);
+            width: 0;
+            height: 0;
+            transform: translate(-50%, -50%);
+            animation: ripple-out 0.55s ease-out forwards;
+            pointer-events: none;
+        }
+
+        @keyframes ripple-out {
+            to {
+                width: 300px;
+                height: 300px;
+                opacity: 0;
+            }
+        }
+
+        /* ═══════════════════════ TICKER ═══════════════════════ */
+        .ticker {
+            position: fixed;
+            bottom: var(--bottom-bar);
+            left: 0;
+            right: 0;
+            height: 20px;
+            background: rgba(15, 227, 29, 0.03);
+            border-top: 1px solid rgba(15, 227, 29, 0.07);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            z-index: 90;
+        }
+
+        .ticker-inner {
+            display: flex;
+            gap: 44px;
+            white-space: nowrap;
+            animation: ticker-scroll 22s linear infinite;
+            font-size: 0.44rem;
+            letter-spacing: 0.24em;
+            color: rgba(15, 227, 29, 0.25);
+        }
+
+        @keyframes ticker-scroll {
+            from {
+                transform: translateX(100vw);
+            }
+
+            to {
+                transform: translateX(-200%);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Ambient -->
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="corner corner-tl"></div>
+    <div class="corner corner-tr"></div>
+    <div class="corner corner-bl"></div>
+    <div class="corner corner-br"></div>
+
+    <!-- Header -->
+    <header>
+        <h1><span class="dollar">$</span>CASINO<span class="dollar">$</span></h1>
+        <p class="subtitle">Est. 2025 &nbsp;·&nbsp; Play Responsibly</p>
+    </header>
+
+    <!-- Wheel -->
+    <div class="wheel-section">
+        <div class="roulette-wrap">
+            <canvas id="wheelCanvas"></canvas>
+            <div id="hubNumber"></div>
+            <div id="ball"></div>
+            <div class="pointer">▼</div>
+        </div>
+    </div>
+
+    <!-- Bet strip -->
+    <div class="bet-section">
+        <div class="bet-strip">
+            <div class="bet-row">
+                <span class="bet-label">BET ON</span>
+                <div class="color-bets">
+                    <button class="color-btn red" data-color="red">RED</button>
+                    <button class="color-btn green" data-color="green">0</button>
+                    <button class="color-btn black" data-color="black">BLACK</button>
+                </div>
+            </div>
+            <div class="bet-row">
+                <span class="bet-label">CHIPS</span>
+                <div class="chips">
+                    <button class="chip" data-val="1000">$1K</button>
+                    <button class="chip" data-val="10000">$10K</button>
+                    <button class="chip" data-val="50000">$50K</button>
+                    <button class="chip" data-val="100000">$100K</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Spin -->
+    <div class="spin-wrap">
+        <button class="spin-btn" id="spinBtn">SPIN</button>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast-wrap">
+        <div class="toast-inner" id="toastInner"></div>
+    </div>
+
+    <!-- Ticker -->
+    <div class="ticker">
+        <div class="ticker-inner">
+            <span>PICK ONE</span><span>♠♥♦♣</span><span>SPIN TO WIN</span><span>♠♥♦♣</span>
+            <span>PICK ONE</span><span>♠♥♦♣</span><span>SPIN TO WIN</span><span>♠♥♦♣</span>
+            <span>PICK ONE</span><span>♠♥♦♣</span><span>SPIN TO WIN</span><span>♠♥♦♣</span>
+        </div>
+    </div>
+
+    <!-- Bottom stats bar -->
+    <div class="bottom-bar">
+        <div class="stat-cell left">
+            <span class="stat-label">BANK</span>
+            <span class="stat-value" id="bankVal"><span class="dollar-sm" id="bankSign">$</span><span
+                    id="bankNum">0</span></span>
+        </div>
+        <div class="stat-cell">
+            <span class="stat-label">HISTORY</span>
+            <div class="history-list" id="historyList"></div>
+        </div>
+        <div class="stat-cell right">
+            <span class="stat-label">BET</span>
+            <span class="stat-value neutral"><span class="dollar-sm">$</span><span id="betNum">0</span></span>
+        </div>
+    </div>
+
+    <!-- Music toggle -->
+    <button id="musicBtn" aria-label="Play/Pause">♪</button>
+    <div id="trackLabel"></div>
+
+    <script>
+        /* ═══════════════════════════════════════════
+           MUSIC
+        ═══════════════════════════════════════════ */
+        const TRACKS = ['music/song1.mp3', 'music/song2.mp3', 'music/song3.mp3', 'music/song4.mp3'];
+        const TRACK_NAMES = ['Song 1', 'Song 2', 'Song 3', 'Song 4'];
+        let trackIdx = 0;
+        let musicStarted = false;
+
+        const audio = new Audio();
+        audio.preload = 'none';
+
+        const musicBtn = document.getElementById('musicBtn');
+        const trackLabel = document.getElementById('trackLabel');
+
+        function loadTrack(idx) {
+            trackIdx = ((idx % TRACKS.length) + TRACKS.length) % TRACKS.length;
+            audio.src = TRACKS[trackIdx];
+            audio.load();
+            trackLabel.textContent = TRACK_NAMES[trackIdx];
+            trackLabel.classList.add('show');
+            clearTimeout(trackLabel._t);
+            trackLabel._t = setTimeout(() => trackLabel.classList.remove('show'), 2600);
+        }
+
+        audio.addEventListener('ended', () => {
+            loadTrack(trackIdx + 1);
+            audio.play().catch(() => { });
+        });
+
+        function startMusic() {
+            if (!musicStarted) { musicStarted = true; loadTrack(0); }
+            audio.play().then(() => {
+                musicBtn.textContent = '❚❚';
+                musicBtn.classList.add('playing');
+            }).catch(() => { });
+        }
+
+        musicBtn.addEventListener('click', () => {
+            if (audio.paused) {
+                startMusic();
+            } else {
+                audio.pause();
+                musicBtn.textContent = '♪';
+                musicBtn.classList.remove('playing');
+            }
+        });
+
+        /* ═══════════════════════════════════════════
+           WHEEL DATA
+        ═══════════════════════════════════════════ */
+        const POCKETS = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
+        const RED_NUMS = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]);
+        const TOTAL = POCKETS.length;
+        const SLICE = (2 * Math.PI) / TOTAL;
+
+        function pocketColor(n) {
+            if (n === 0) return 'green';
+            return RED_NUMS.has(n) ? 'red' : 'black';
+        }
+
+        /* ═══════════════════════════════════════════
+           CANVAS
+        ═══════════════════════════════════════════ */
+        const canvas = document.getElementById('wheelCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            const size = canvas.parentElement.offsetWidth;
+            canvas.width = size;
+            canvas.height = size;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', () => { resizeCanvas(); drawWheel(wheelAngle); repositionBall(); });
+
+        function drawWheel(angle) {
+            const W = canvas.width;
+            const cx = W / 2, cy = W / 2;
+            const outerR = W / 2 - 2;
+            const innerR = W / 2 * 0.19;
+            const trackR = outerR - W * 0.052;
+            const pocketR = trackR - W * 0.028;
+
+            ctx.clearRect(0, 0, W, W);
+
+            ctx.beginPath(); ctx.arc(cx, cy, outerR, 0, Math.PI * 2); ctx.fillStyle = '#0d0d0d'; ctx.fill();
+            ctx.beginPath(); ctx.arc(cx, cy, outerR, 0, Math.PI * 2); ctx.lineWidth = W * 0.026; ctx.strokeStyle = '#b89a42'; ctx.stroke();
+            ctx.beginPath(); ctx.arc(cx, cy, trackR, 0, Math.PI * 2); ctx.lineWidth = W * 0.038; ctx.strokeStyle = '#181818'; ctx.stroke();
+
+            for (let i = 0; i < TOTAL; i++) {
+                const start = angle + i * SLICE - SLICE / 2;
+                const end = start + SLICE;
+                const num = POCKETS[i];
+                const col = pocketColor(num);
+
+                ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, pocketR, start, end); ctx.closePath();
+                ctx.fillStyle = col === 'red' ? '#b52f2f' : col === 'green' ? '#166e16' : '#0e0e0e';
+                ctx.fill();
+                ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, pocketR, start, end); ctx.closePath();
+                ctx.lineWidth = 0.6; ctx.strokeStyle = 'rgba(200,160,50,0.3)'; ctx.stroke();
+
+                const mid = angle + i * SLICE;
+                const lr = pocketR * 0.73;
+                ctx.save();
+                ctx.translate(cx + lr * Math.cos(mid), cy + lr * Math.sin(mid));
+                ctx.rotate(mid + Math.PI / 2);
+                ctx.font = `bold ${Math.max(5, W * 0.027)}px 'Space Mono', monospace`;
+                ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(String(num), 0, 0);
+                ctx.restore();
+            }
+
+            const grad = ctx.createRadialGradient(cx - innerR * .3, cy - innerR * .3, 0, cx, cy, innerR);
+            grad.addColorStop(0, '#444'); grad.addColorStop(1, '#0e0e0e');
+            ctx.beginPath(); ctx.arc(cx, cy, innerR, 0, Math.PI * 2); ctx.fillStyle = grad; ctx.fill();
+            ctx.lineWidth = W * 0.009; ctx.strokeStyle = '#b89a42'; ctx.stroke();
+
+            for (let s = 0; s < 8; s++) {
+                const a = angle + (s / 8) * Math.PI * 2;
+                ctx.beginPath();
+                ctx.moveTo(cx + innerR * Math.cos(a), cy + innerR * Math.sin(a));
+                ctx.lineTo(cx + innerR * 2.15 * Math.cos(a), cy + innerR * 2.15 * Math.sin(a));
+                ctx.lineWidth = W * 0.0045; ctx.strokeStyle = 'rgba(184,154,66,0.28)'; ctx.stroke();
+            }
+        }
+
+        /* ═══════════════════════════════════════════
+           BALL
+        ═══════════════════════════════════════════ */
+        let wheelAngle = 0;
+        let ballAngle = -Math.PI / 2;
+        let spinning = false;
+
+        const ballEl = document.getElementById('ball');
+        const hubNumber = document.getElementById('hubNumber');
+
+        function setBallPos(angle, r) {
+            const W = canvas.width;
+            const cx = W / 2, cy = W / 2;
+            const bx = cx + r * Math.cos(angle);
+            const by = cy + r * Math.sin(angle);
+            const rect = canvas.getBoundingClientRect();
+            const scale = rect.width / W;
+            const wrapRect = canvas.parentElement.getBoundingClientRect();
+            const px = (rect.left - wrapRect.left) + bx * scale;
+            const py = (rect.top - wrapRect.top) + by * scale;
+            const half = ballEl.offsetWidth / 2;
+            ballEl.style.left = (px - half) + 'px';
+            ballEl.style.top = (py - half) + 'px';
+            ballEl.style.transform = 'none';
+        }
+
+        function getTrackR() { return (canvas.width / 2 - 2) - canvas.width * 0.052; }
+        function getPocketR() { return getTrackR() - canvas.width * 0.028; }
+        function repositionBall() { setBallPos(ballAngle, getTrackR()); }
+
+        /* ═══════════════════════════════════════════
+           STATS
+        ═══════════════════════════════════════════ */
+        let bank = 0;
+        let history = [];
+
+        function updateBank(delta) {
+            bank += delta;
+            document.getElementById('bankNum').textContent = Math.abs(bank);
+            document.getElementById('bankSign').textContent = bank < 0 ? '-$' : '$';
+            const el = document.getElementById('bankVal');
+            el.classList.remove('positive', 'negative');
+            if (bank > 0) el.classList.add('positive');
+            else if (bank < 0) el.classList.add('negative');
+            el.style.transform = 'scale(1.18)';
+            setTimeout(() => el.style.transform = '', 170);
+        }
+
+        function addHistory(result) {
+            history.push(result);
+            if (history.length > 8) history.shift();
+            const list = document.getElementById('historyList');
+            list.innerHTML = '';
+            history.forEach(r => {
+                const d = document.createElement('div');
+                d.className = 'history-dot ' + r;
+                list.appendChild(d);
+            });
+        }
+
+        /* ═══════════════════════════════════════════
+           BETTING
+        ═══════════════════════════════════════════ */
+        let selectedColor = null;
+        let betAmount = 0;
+
+        document.querySelectorAll('.color-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                selectedColor = btn.dataset.color;
+                document.getElementById('betNum').textContent = betAmount || 0;
+            });
+        });
+
+        document.querySelectorAll('.chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                document.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+                chip.classList.add('selected');
+                betAmount = parseInt(chip.dataset.val);
+                document.getElementById('betNum').textContent = betAmount;
+            });
+        });
+
+        function clearBets() {
+            document.querySelectorAll('.color-btn, .chip').forEach(el => el.classList.remove('selected'));
+            selectedColor = null; betAmount = 0;
+            document.getElementById('betNum').textContent = '0';
+        }
+
+        /* ═══════════════════════════════════════════
+           SPIN
+        ═══════════════════════════════════════════ */
+        const spinBtn = document.getElementById('spinBtn');
+
+        spinBtn.addEventListener('click', function (e) {
+            if (spinning) return;
+            if (!selectedColor) { showToast('Pick a colour first!', 'push'); return; }
+            if (!betAmount) { showToast('Pick a chip first!', 'push'); return; }
+
+            // Ripple effect
+            const rip = document.createElement('span');
+            rip.className = 'ripple';
+            const rect = spinBtn.getBoundingClientRect();
+            const ex = e.clientX || rect.left + rect.width / 2;
+            const ey = e.clientY || rect.top + rect.height / 2;
+            rip.style.left = (ex - rect.left) + 'px';
+            rip.style.top = (ey - rect.top) + 'px';
+            spinBtn.appendChild(rip);
+            rip.addEventListener('animationend', () => rip.remove());
+
+            startMusic();
+            doSpin();
+        });
+
+        // Also handle touchend for snappy mobile response
+        spinBtn.addEventListener('touchend', function (e) {
+            e.preventDefault(); // prevent the subsequent click event
+            if (spinning) return;
+            if (!selectedColor) { showToast('Pick a colour first!', 'push'); return; }
+            if (!betAmount) { showToast('Pick a chip first!', 'push'); return; }
+
+            const rip = document.createElement('span');
+            rip.className = 'ripple';
+            const rect = spinBtn.getBoundingClientRect();
+            rip.style.left = (rect.width / 2) + 'px';
+            rip.style.top = (rect.height / 2) + 'px';
+            spinBtn.appendChild(rip);
+            rip.addEventListener('animationend', () => rip.remove());
+
+            startMusic();
+            doSpin();
+        });
+
+        function doSpin() {
+            spinning = true;
+            spinBtn.disabled = true;
+            hubNumber.classList.remove('show', 'red-num', 'green-num', 'black-num');
+
+            const trackR = getTrackR();
+            const pocketR = getPocketR();
+            const winIdx = Math.floor(Math.random() * TOTAL);
+            const winNum = POCKETS[winIdx];
+
+            const wheelSpins = 4 + Math.random() * 4;
+            const wheelDelta = wheelSpins * Math.PI * 2;
+            const startWheelAngle = wheelAngle;
+            const finalWheelAngle = startWheelAngle + wheelDelta;
+
+            const ballSpins = 7 + Math.random() * 5;
+            const startBallAngle = ballAngle;
+            const rawTarget = finalWheelAngle + winIdx * SLICE;
+            const totalBallDelta = (rawTarget - startBallAngle) - ballSpins * Math.PI * 2;
+
+            const DURATION = 5200;
+            let start = null;
+
+            function easeOut(t) { return 1 - Math.pow(1 - t, 4); }
+            function easeIn(t) { return t * t; }
+
+            function step(ts) {
+                if (!start) start = ts;
+                const t = Math.min((ts - start) / DURATION, 1);
+
+                wheelAngle = startWheelAngle + wheelDelta * easeOut(t);
+                ballAngle = startBallAngle + totalBallDelta * easeOut(t);
+
+                const inwardT = Math.max(0, (t - 0.7) / 0.3);
+                const currentR = trackR - (trackR - pocketR * 0.9) * easeIn(inwardT);
+
+                drawWheel(wheelAngle);
+                setBallPos(ballAngle, currentR);
+
+                if (t < 1) { requestAnimationFrame(step); }
+                else {
+                    wheelAngle = finalWheelAngle;
+                    ballAngle = startBallAngle + totalBallDelta;
+                    drawWheel(wheelAngle);
+                    setBallPos(ballAngle, pocketR * 0.82);
+                    onSpinEnd(winNum);
+                }
+            }
+            requestAnimationFrame(step);
+        }
+
+        function onSpinEnd(winNum) {
+            spinning = false;
+            spinBtn.disabled = false;
+
+            const winColor = pocketColor(winNum);
+            const won = winColor === selectedColor;
+
+            // Show number in hub
+            hubNumber.textContent = winNum;
+            hubNumber.classList.remove('red-num', 'green-num', 'black-num');
+            hubNumber.classList.add(winColor + '-num', 'show');
+
+            if (won) {
+                const payout = winColor === 'green' ? betAmount * 35 : betAmount;
+                updateBank(payout);
+                addHistory('w');
+                showToast(`🎉 ${winNum} ${winColor.toUpperCase()}! +$${payout}`, 'win');
+                burst();
+            } else {
+                updateBank(-betAmount);
+                addHistory('l');
+                showToast(`${winNum} ${winColor.toUpperCase()} — −$${betAmount}`, 'lose');
+            }
+            clearBets();
+        }
+
+        function showToast(msg, type) {
+            const el = document.getElementById('toastInner');
+            el.textContent = msg;
+            el.className = 'toast-inner';
+            void el.offsetWidth;
+            el.classList.add('show', type);
+        }
+
+        function burst() {
+            const colors = ['#0fe31d', '#e2c46a', '#e84040', '#ffffff'];
+            for (let i = 0; i < 32; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.style.left = (10 + Math.random() * 80) + 'vw';
+                p.style.top = (20 + Math.random() * 50) + 'vh';
+                p.style.setProperty('--dx', (Math.random() * 100 - 50) + 'px');
+                p.style.animationDuration = (0.7 + Math.random() * 1) + 's';
+                p.style.animationDelay = (Math.random() * 0.3) + 's';
+                const sz = (2 + Math.random() * 4) + 'px';
+                p.style.width = sz; p.style.height = sz;
+                p.style.background = colors[Math.floor(Math.random() * colors.length)];
+                document.body.appendChild(p);
+                p.addEventListener('animationend', () => p.remove());
+            }
+        }
+
+        /* ═══════════════════════════════════════════
+           INIT
+        ═══════════════════════════════════════════ */
+        drawWheel(wheelAngle);
+        setBallPos(ballAngle, getTrackR());
+    </script>
+</body>
+
+</html>
