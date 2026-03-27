@@ -1096,17 +1096,34 @@
             const trackR = getTrackR();
             const pocketR = getPocketR();
             const winIdx = Math.floor(Math.random() * TOTAL);
-            const winNum = POCKETS[winIdx];
 
-            const wheelSpins = 4 + Math.random() * 4;
-            const wheelDelta = wheelSpins * Math.PI * 2;
+            // The pointer is fixed at the TOP of the wheel, canvas angle = -PI/2.
+            // Pocket i is centered at canvas angle: (wheelAngle + i * SLICE).
+            // We want pocket winIdx to end up AT the pointer, so:
+            //   finalWheelAngle + winIdx * SLICE ≡ -PI/2  (mod 2PI)
+            //   => finalWheelAngle = -PI/2 - winIdx * SLICE
+            // Add enough full rotations so the wheel spins forward visually.
+            const wheelSpins = 4 + Math.floor(Math.random() * 5); // whole rotations only
+            const baseWheelTarget = -Math.PI / 2 - winIdx * SLICE;
+            // Bring baseWheelTarget above current wheelAngle, then add full spins
+            let finalWheelAngle = baseWheelTarget;
+            while (finalWheelAngle <= wheelAngle) finalWheelAngle += Math.PI * 2;
+            finalWheelAngle += wheelSpins * Math.PI * 2;
+
             const startWheelAngle = wheelAngle;
-            const finalWheelAngle = startWheelAngle + wheelDelta;
+            const wheelDelta = finalWheelAngle - startWheelAngle;
 
-            const ballSpins = 7 + Math.random() * 5;
+            // Ball spins counter to wheel in opposite direction, lands at the pointer (top = -PI/2).
+            // Ball just needs to end at -PI/2 after many rotations (it's in fixed frame, pointer is fixed).
+            const ballSpins = 7 + Math.floor(Math.random() * 5);
             const startBallAngle = ballAngle;
-            const rawTarget = finalWheelAngle + winIdx * SLICE;
-            const totalBallDelta = (rawTarget - startBallAngle) - ballSpins * Math.PI * 2;
+            // Target: ball at -PI/2 (top, where pointer is)
+            let finalBallAngle = -Math.PI / 2;
+            // Ensure ball travels forward (clockwise, increasing angle) by enough laps
+            while (finalBallAngle <= startBallAngle + ballSpins * Math.PI * 2) {
+                finalBallAngle += Math.PI * 2;
+            }
+            const totalBallDelta = finalBallAngle - startBallAngle;
 
             const DURATION = 5200;
             let start = null;
@@ -1127,13 +1144,16 @@
                 drawWheel(wheelAngle);
                 setBallPos(ballAngle, currentR);
 
-                if (t < 1) { requestAnimationFrame(step); }
-                else {
+                if (t < 1) {
+                    requestAnimationFrame(step);
+                } else {
                     wheelAngle = finalWheelAngle;
-                    ballAngle = startBallAngle + totalBallDelta;
+                    ballAngle = finalBallAngle;
                     drawWheel(wheelAngle);
                     setBallPos(ballAngle, pocketR * 0.82);
-                    onSpinEnd(winNum);
+                    // Winner is POCKETS[winIdx] — the wheel was rotated so that pocket
+                    // is exactly at the pointer. No angle readback needed.
+                    onSpinEnd(POCKETS[winIdx]);
                 }
             }
             requestAnimationFrame(step);
